@@ -16,10 +16,18 @@ const register = async (request, response) => {
     !request.body.email ||
     !request.body.password
   ) {
-    response.status(400).json({ error: "Some fields are missing" });
+    response.status(400).json({ error: "Des champs sont manquants" });
   }
-  const hashedPassword = await bcrypt.hash(request.body.password, 10);
+
   try {
+    const existingMember = await client
+      .db("Sorties-2000's")
+      .collection("member")
+      .findOne({ email: request.body.email });
+    if (existingMember) {
+      return response.status(400).json({ msg: "Cet email est déjà utilisé" });
+    }
+    const hashedPassword = await bcrypt.hash(request.body.password, 10);
     let member = new Member(
       request.body.firstName,
       request.body.lastName,
@@ -37,6 +45,14 @@ const register = async (request, response) => {
       .db("Sorties-2000's")
       .collection("member")
       .insertOne(member);
+    const token = jwt.sign(
+      {
+        memberId: result.insertedId,
+        email: member.email,
+      },
+      process.env.MY_SUPER_SECRET_KEY,
+      { expiresIn: "1h" }
+    );
     response.status(200).json(result);
   } catch (e) {
     console.log(e);
@@ -53,11 +69,20 @@ const login = async (request, response) => {
     .db("Sorties-2000's")
     .collection("member")
     .findOne({ email: request.body.email });
-  if (!menber) {
+  if (!member) {
     response
       .status(401)
       .json({ error: "Mauvaises informations d'identification" });
     return;
+  } else {
+    const isValidPassword = await bcrypt.compare(
+      request.body.password,
+      member.password
+    );
+    if (!isValidPassword) {
+      response.status(401).json({ erro: "Invalid credentials" });
+      return;
+    }
   }
   const isValidPassword = bcrypt.compare(
     request.body.password,
@@ -72,7 +97,7 @@ const login = async (request, response) => {
       {
         email: member.email,
         id: member._id,
-        role: menber.role,
+        role: member.role,
         firstName: member.firstName,
         lastName: member.lastName,
         gdpr: new Date(member.gdpr).toLocaleDateString("fr"),
