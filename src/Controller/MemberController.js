@@ -7,6 +7,7 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 const register = async (request, response) => {
+  console.log("mybody sent", request.body);
   if (
     !request.body.firstName ||
     !request.body.lastName ||
@@ -16,7 +17,9 @@ const register = async (request, response) => {
     !request.body.email ||
     !request.body.password
   ) {
-    response.status(400).json({ error: "Des champs sont manquants" });
+    console.log("je suis dans lerreur 400 ");
+    response.status(400).json({ message: "Des champs sont manquants" });
+    return;
   }
 
   try {
@@ -45,24 +48,29 @@ const register = async (request, response) => {
       .db("Sorties-2000's")
       .collection("member")
       .insertOne(member);
-    const token = jwt.sign(
-      {
-        memberId: result.insertedId,
-        email: member.email,
-      },
-      process.env.MY_SUPER_SECRET_KEY,
-      { expiresIn: "1h" }
-    );
-    response.status(200).json(result);
+
+    // const token = jwt.sign(
+    //   {
+    //     memberId: result.insertedId,
+    //     email: member.email,
+    //   },
+    //   process.env.SECRET_KEY,
+    //   { expiresIn: "1h" }
+    // );
+    response.status(200).json({ message: "ok" });
   } catch (e) {
     console.log(e);
-    response.status(500).json(e);
+    response.status(500).json(e.stack);
   }
 };
 
 const login = async (request, response) => {
+  console.log(request.body.email);
+  console.log(request.body.password);
   if (!request.body.email || !request.body.password) {
-    response.status(400).json({ erro: "Des champs sont manquants" });
+    response
+      .status(400)
+      .json({ erro: "Utilisateur non trouvé ou mot de passe érroné" });
     return;
   }
   let member = await client
@@ -80,7 +88,9 @@ const login = async (request, response) => {
       member.password
     );
     if (!isValidPassword) {
-      response.status(401).json({ erro: "Invalid credentials" });
+      response
+        .status(401)
+        .json({ erro: "Mauvaises informations d'identification" });
       return;
     }
   }
@@ -102,11 +112,45 @@ const login = async (request, response) => {
         lastName: member.lastName,
         gdpr: new Date(member.gdpr).toLocaleDateString("fr"),
       },
-      process.env.MY_SUPER_SECRET_KEY,
+      process.env.SECRET_KEY,
       { expiresIn: "20d" }
     );
     response.status(200).json({ jwt: token });
   }
 };
+
+// const login = async (request, response) => {
+//     try {
+//         const { email, password } = request.body;
+//
+//         const member = await client
+//             .db("Sorties-2000's")
+//             .collection('member')
+//             .findOne({ email });
+//         if (!member) {
+//             return response.status(404).json({ msg: "Utilisateur non trouvé" });
+//         }
+//
+//         const passwordMatch = await bcrypt.compare(password, member.password);
+//
+//         if (!passwordMatch) {
+//             return response.status(401).json({ msg: "Mot de passe incorrect" });
+//         }
+//         const token = jwt.sign(
+//             {
+//                 memberId: member._id, // ID de l'utilisateur dans la base de données
+//                 email: member.email,
+//             },
+//             process.env.SECRET_KEY,
+//             { expiresIn: '1h' }
+//         );
+
+//         // Envoyer la réponse avec le token JWT dans le corps de la réponse
+//         response.status(200).json({ token });
+//     } catch (error) {
+//         console.log(error);
+//         response.status(500).json({ msg: "Erreur lors de la connexion" });
+//     }
+// };
 
 module.exports = { register, login };
