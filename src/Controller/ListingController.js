@@ -6,6 +6,42 @@ const { extractToken } = require("../Utils/extractToken");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
+// const createListing = async (request, response) => {
+//   if (
+//     !request.body.title ||
+//     !request.body.orgnizer ||
+//     !request.body.releaseDate ||
+//     !request.body.startTime ||
+//     !request.body.descriptionTrip ||
+//     !request.body.nbPlaces ||
+//     !request.body.appointmentAddress
+//   ) {
+//     response.status(400).json({ error: "Des champs sont manquants" });
+//   }
+//   try {
+//     let listing = new Listing(
+//       request.body.title,
+//       request.body.orgnizer,
+//       request.body.releaseDate,
+//       request.body.startTime,
+//       request.body.descriptionTrip,
+//       request.body.nbPlaces,
+//       request.body.appointmentAddress,
+//       authData.id,
+//       new Date(),
+//       "published"
+//     );
+//     let result = await client
+//       .db("Sorties-2000's")
+//       .collection("listing")
+//       .insertOne(listing);
+//     response.status(200).json(result);
+//   } catch (e) {
+//     console.log(e);
+//     response.status(500).json(e);
+//   }
+// };
+
 const createListing = async (request, response) => {
   const token = await extractToken(request);
 
@@ -76,24 +112,11 @@ const getMyListing = async (request, response) => {
 };
 
 const getAllListing = async (request, response) => {
-  const token = await extractToken(request);
+  console.log("played");
 
-  jwt.verify(token, process.env.SECRET_KEY, async (err, authData) => {
-    if (err) {
-      console.log(err);
-      response
-        .status(401)
-        .json({ err: "Requête non autorisée le Token n'est pas bon" });
-      return;
-    } else {
-      let listing = await client
-        .db("Sorties-2000's")
-        .collection("listing")
-        .find();
-      let apiResponse = await listing.toArray();
-      response.status(200).json(apiResponse);
-    }
-  });
+  let listing = await client.db("Sorties-2000's").collection("listing").find();
+  let apiResponse = await listing.toArray();
+  response.status(200).json(apiResponse);
 };
 
 // const deleteListing = async (request, response) => {

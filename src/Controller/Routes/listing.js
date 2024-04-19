@@ -10,7 +10,7 @@ const { verifyToken } = require("../../Utils/extractToken");
 
 const router = express.Router();
 
-router.route("/createListing", verifyToken).post(createListing);
+router.route("/createListing").post(createListing);
 router.route("/myListing", verifyToken).post(getMyListing);
 router.route("/all").get(getAllListing);
 router.route("/delete").delete(deleteListing);
